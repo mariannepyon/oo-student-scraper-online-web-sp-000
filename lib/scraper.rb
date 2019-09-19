@@ -85,10 +85,6 @@ class Scraper
       students_twitter
       students_linkedin
       students_github
-      # students_youtube
-      #   if students_youtube = ""
-      #     students_youtube = nil
-      #   end
       students_blog
 
       # This needs to be an iteration where it starts with <<output = {}>>
