@@ -5,32 +5,98 @@ class Scraper
 
   def self.scrape_index_page(index_url)
 
-    students_hash = []
-    html = Nokogiri::HTML(open(index_url))
-    html.css(".student-card").collect do |student|
-      hash = {
-        name: student.css("h4.student-name").text,
-        location: student.css("p.student-location").text,
-        profile_url: "http://students.learn.co/" + student.css("a").attribute("href")
-      }
-      students_hash << hash
+    html = open(index_url) #=> index_url = "../fixtures/student-site/index.html"
+    list = Nokogiri::HTML(html)
+
+    # This block returns a list of student names
+    names = list.css(".student-name")
+    names_array = []
+    names.each do |item|
+      names_array << item.text
     end
-    students_hash
+    names_array
+
+    # This block returns a list of locations.
+    locations = list.css(".student-location")
+    location_array = []
+    locations.each do |item|
+      location_array << item.text
+    end
+    location_array
+
+    # This block returns a list of student HTML pages.
+    webpages = list.css(".student-card a[href]")
+    webpage_array = []
+    webpages.select do |item|
+      webpage_array << item['href']
+    end
+    webpage_array
+
+
+    master_array = []
+    hash = {}
+    x = 0
+    names_array.each do |name|
+      master_array << {:name => name, :location => location_array[x], :profile_url => webpage_array[x]}
+      x = x + 1
+    end
+    master_array
   end
 
   def self.scrape_profile_page(profile_url)
-    students_hash = {}
-    html = Nokogiri::HTML(open(profile_url))
-    html.css("div.social-icon-controler a").each do |student|
-        url = student.attribute("href")
-        students_hash[:twitter_url] = url if url.include?("twitter")
-        students_hash[:linkedin_url] = url if url.include?("linkedin")
-        students_hash[:github_url] = url if url.include?("github")
-        students_hash[:blog_url] = url if student.css("img").attribute("src").text.include?("rss")
+    html = open(profile_url)
+      doc = Nokogiri::HTML(html)
+
+      students_twitter = []
+      students_linkedin = []
+      students_github = []
+      students_youtube = []
+      students_blog = []
+
+      doc.xpath('//div[@class="social-icon-container"]/a').map do |link|
+        if link['href'].include?("twitter")
+          students_twitter << link['href']
+        end
+      end
+
+      doc.xpath('//div[@class="social-icon-container"]/a').map do |link|
+        if link['href'].include?("linkedin")
+          students_linkedin << link['href']
+        end
+      end
+
+      doc.xpath('//div[@class="social-icon-container"]/a').map do |link|
+        if link['href'].include?("github")
+          students_github << link['href']
+        end
+      end
+
+      doc.xpath('//div[@class="social-icon-container"]/a').map do |link|
+        if !(link['href'].include?("github")) &&
+           !(link['href'].include?("linkedin")) &&
+           !(link['href'].include?("twitter"))
+           students_blog = link['href']
+        end
+      end
+
+      students_quote = doc.css(".profile-quote").text
+      students_bio = doc.css(".description-holder p").text
+
+      students_twitter
+      students_linkedin
+      students_github
+      students_blog
+
+      # This needs to be an iteration where it starts with <<output = {}>>
+      out_put = {:twitter=>students_twitter[0],
+                 :linkedin=>students_linkedin[0],
+                 :github=>students_github[0],
+                 :profile_quote=>students_quote,
+                 :blog=>students_blog,
+                 :bio=> students_bio}
+      out_put.delete_if {|key, value| value == [] || value == nil}
+
+      out_put
     end
-        students_hash[:profile_quote] = html.css("div.profile-quote").text
-        students_hash[:bio] = html.css("div.bio-content p").text
-    students_hash
-  end
 
 end
